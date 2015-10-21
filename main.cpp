@@ -64,7 +64,7 @@ void craft::initialize(int a){
 }
 
 //make sure the angle is between pi and negative pi
-double resetangle(double angle){
+double reset_angle(double angle){
     double pi = 4*atan(1);
     
     if(angle>pi){
@@ -81,6 +81,13 @@ double resetangle(double angle){
     return angle;
 }
 
+double positionvector(double x, double z){
+    double xsqr = pow(x,2);
+    double zsqr = pow(z,2);
+    
+    return sqrt(xsqr+zsqr);
+}
+
 //create a vector of the state variables
 //feeding in the number of DOFs, the vector of doubles that will go to controller, the reference frame information, and the time.
 //returning a vector of doubles, where the 0 value is time, the 1 value is the timestep, and then 1+(n*1),1+(n*2),1+(n*3) are position, velocity, and acceleration, respectively, where n ranges from 1 to the total number of DOFs.
@@ -89,10 +96,11 @@ void statevector(int count, vector<double> & state, vector<DOF> ref, double t, d
     state.clear();
     state.push_back(t);
     state.push_back(tstep);
+    
     for(int i=0;i<count;i++){
         double s;
         if(i==2){
-            s = resetangle(ref.at(i).s);
+            s = reset_angle(ref.at(i).s);
         }else{
             s = ref.at(i).s;
         }
@@ -138,28 +146,39 @@ vector <double> controller(vector<double> state){
     return controls;
 }
 
-// calculate new position, velocity, and acceleration for each direction.
-void dynamicscalc(vector<DOF> & ref, vector<double> controls, double m, double I, double ts){
-    double alpha = resetangle(ref.at(2).s);
+// calc controls to forces in newtonian directions
+vector<double> forcecalc(vector<double> controls, vector<DOF> angles) {
+    vector<double> forces;
+    double alpha = angles.at(2).s;
     double g = -9.81;
-    ref.at(0).gravity = g*sin(alpha);
-    ref.at(1).gravity = g*cos(alpha);
-    for(int i=0;i<controls.size();i++){
-        
-        ref.at(i).thrust = controls.at(i);
-        //cout<< i<<"\t\t"<<ref.at(i).thrust<<endl;
+    double forcesx = controls.at(0)*cos(alpha)+controls.at(1)*sin(alpha);
+    forces.push_back(forcesx);
+    double forcesz = controls.at(1)*cos(alpha)-controls.at(0)*sin(alpha)+g;
+    forces.push_back(forcesz);
+    forces.push_back(controls.at(2));
+    return forces;
+}
+
+
+// calculate new position, velocity, and acceleration for each direction.
+// check trig things
+double dynamicscalc(vector<DOF> & ref, vector<double> force, double m, double I, double ts){
+    double prevalpha;
+    for(int i=0;i<force.size();i++){
         double accelprev = ref.at(i).sdotdot;
-        double velprev = ref.at(i).sdotdot;
+        double velprev = ref.at(i).sdot;
         
         if(i<=1){
-            ref.at(i).sdotdot = ref.at(i).gravity-ref.at(i).thrust/m;
+            ref.at(i).sdotdot = force.at(i)/m;
         }else if(i>1){
-            ref.at(i).sdotdot = ref.at(i).gravity-ref.at(i).thrust/I;
+            ref.at(i).sdotdot = force.at(i)/I;
         }
         
         ref.at(i).sdot = ref.at(i).sdot + 0.5*ts*(accelprev+ref.at(i).sdotdot);
         ref.at(i).s = ref.at(i).s + 0.5*ts*(velprev+ref.at(i).sdot);
     }
+    
+    return ref.at(2).s - prevalpha;
 }
 
 
@@ -172,8 +191,11 @@ int main(){
     double t = 0;
     double const tstep = 0.1;
     double const tmax = 60;
+    double anglechange = 0;
+    double position;
     vector<double> state;
     vector<double> controls;
+    vector<double> forces;
     
     ofstream myfile;
     myfile.open("R2D2data.txt");
@@ -182,12 +204,17 @@ int main(){
     lander.initialize(DOF);
     
     printheader();
+    position = positionvector(lander.frame.at(0).s, lander.frame.at(1).s);
     statevector(DOF, state, lander.frame, t, tstep);
     printround(state, DOF, myfile);
     
+    lander.frame.at(2).s = reset_angle(lander.frame.at(2).s);
+    
+    
     while(t<tmax && lander.frame.at(1).s > lander.frame.at(1).target){
         controls = controller(state);
-        dynamicscalc(lander.frame, controls, lander.mass, lander.inertia, tstep);
+        forces = forcecalc(controls, lander.frame);
+        anglechange = anglechange + dynamicscalc(lander.frame, forces, lander.mass, lander.inertia, tstep);
         t = t+tstep;
         statevector(DOF, state, lander.frame, t, tstep);
         printround(state, DOF, myfile);
