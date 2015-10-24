@@ -19,7 +19,7 @@ using namespace std;
 class DOF{
 public:
     double s, sdot, sdotdot;
-    double target, thrust, gravity;
+    double target;
     
     void initialize();
 };
@@ -28,10 +28,8 @@ public:
 void DOF::initialize(){
     s = rand()%100;
     sdot = rand()%10;
-    sdotdot = rand()%10;
+    sdotdot = 0;
     target = 0;
-    thrust = 0;
-    gravity = 0;
     
     cout << s<<"\t\t"<<sdot<<"\t\t"<<endl;
 }
@@ -41,6 +39,7 @@ class craft{
 public:
     vector<DOF> frame;
     double mass, inertia, KE;
+    double CL, CD, sref;
     
     void initialize(int c);
 };
@@ -50,6 +49,9 @@ void craft::initialize(int a){
     mass = 10;
     inertia = 20;
     KE = 0;
+    CL = 0.9;
+    CD = 0.2;
+    sref = 100;
     
     for(int i=0;i<a;i++){
         DOF d;
@@ -81,16 +83,11 @@ double reset_angle(double angle){
     return angle;
 }
 
-double positionvector(double x, double z){
-    double xsqr = pow(x,2);
-    double zsqr = pow(z,2);
-    
-    return sqrt(xsqr+zsqr);
-}
+
 
 //create a vector of the state variables
 //feeding in the number of DOFs, the vector of doubles that will go to controller, the reference frame information, and the time.
-//returning a vector of doubles, where the 0 value is time, the 1 value is the timestep, and then 1+(n*1),1+(n*2),1+(n*3) are position, velocity, and acceleration, respectively, where n ranges from 1 to the total number of DOFs.
+//returning a vector of doubles, where the 0 value is time, the 1 value is the timestep, and then the values alternate between position and velocity for the DOFs.
 void statevector(int count, vector<double> & state, vector<DOF> ref, double t, double tstep){
     
     state.clear();
@@ -98,17 +95,10 @@ void statevector(int count, vector<double> & state, vector<DOF> ref, double t, d
     state.push_back(tstep);
     
     for(int i=0;i<count;i++){
-        double s;
-        if(i==2){
-            s = reset_angle(ref.at(i).s);
-        }else{
-            s = ref.at(i).s;
-        }
+        double s = ref.at(i).s;
         double v = ref.at(i).sdot;
-        double a = ref.at(i).sdotdot;
         state.push_back(s);
         state.push_back(v);
-        state.push_back(a);
     }
 }
 
@@ -126,8 +116,8 @@ void printround(vector<double> state, int count, ofstream & file){
     cout<<setiosflags(ios::fixed)<<setprecision(1)<<state.at(0);
     file<<setiosflags(ios::fixed)<<setprecision(1)<<state.at(0);
     for(int i=0;i<count;i++){
-        cout << "\t\t" << state.at(i*3+2);
-        file << "\t\t" << state.at(i*3+2);
+        cout << "\t\t" << state.at(i*2+2);
+        file << "\t\t" << state.at(i*2+2);
     }
     cout<<endl;
     file<<endl;
@@ -138,24 +128,40 @@ void printround(vector<double> state, int count, ofstream & file){
 vector <double> controller(vector<double> state){
     vector<double> controls;
     
-    for(int i=0; i<3;i++){
-        double thrust = (state.at(i*3+1))*pow(state.at(1),2);
-        controls.push_back(thrust);
-    }
+    double thrust = (state.at(4)-state.at(5))*state.at(1);
+    double moment = (state.at(6)-state.at(7))*state.at(1);
+    controls.push_back(thrust);
+    controls.push_back(moment);
     
     return controls;
 }
 
 // calc controls to forces in newtonian directions
-vector<double> forcecalc(vector<double> controls, vector<DOF> angles) {
+vector<double> forcecalc(vector<double> controls, craft c, double rho) {
     vector<double> forces;
-    double alpha = angles.at(2).s;
+    double alpha = c.frame.at(2).s;
+    double theta = atan(c.frame.at(1).sdot/c.frame.at(0).sdot);
+    double totalangle = alpha+theta;
+    double lift, drag, lx, lz, dx, dz, tx, tz;
     double g = -9.81;
-    double forcesx = controls.at(0)*cos(alpha)+controls.at(1)*sin(alpha);
+    double velsqr = pow(c.frame.at(0).sdot,2)+pow(c.frame.at(1).sdot,2);
+    
+    lift = c.CL*rho*velsqr*c.sref*0.5;
+    drag =c.CD*rho*velsqr*c.sref*0.5;
+    
+    lx = -lift*sin(theta);
+    lz = lift*cos(theta);
+    dx = -drag*cos(theta);
+    dz = -drag*sin(theta);
+    tx = controls.at(0)*cos(totalangle);
+    tz = controls.at(0)*sin(totalangle);
+    
+    
+    double forcesx = lx+dx+tx;
     forces.push_back(forcesx);
-    double forcesz = controls.at(1)*cos(alpha)-controls.at(0)*sin(alpha)+g;
+    double forcesz = lz+dz+tz+g;
     forces.push_back(forcesz);
-    forces.push_back(controls.at(2));
+    forces.push_back(controls.at(1));
     return forces;
 }
 
@@ -192,7 +198,8 @@ int main(){
     double const tstep = 0.1;
     double const tmax = 60;
     double anglechange = 0;
-    double position;
+    double const rhoair = 1.2;
+    vector<double> position;
     vector<double> state;
     vector<double> controls;
     vector<double> forces;
@@ -203,17 +210,17 @@ int main(){
     craft lander;
     lander.initialize(DOF);
     
+    lander.frame.at(2).s = reset_angle(lander.frame.at(2).s);
     printheader();
-    position = positionvector(lander.frame.at(0).s, lander.frame.at(1).s);
     statevector(DOF, state, lander.frame, t, tstep);
     printround(state, DOF, myfile);
     
-    lander.frame.at(2).s = reset_angle(lander.frame.at(2).s);
+    
     
     
     while(t<tmax && lander.frame.at(1).s > lander.frame.at(1).target){
         controls = controller(state);
-        forces = forcecalc(controls, lander.frame);
+        forces = forcecalc(controls, lander, rhoair);
         anglechange = anglechange + dynamicscalc(lander.frame, forces, lander.mass, lander.inertia, tstep);
         t = t+tstep;
         statevector(DOF, state, lander.frame, t, tstep);
