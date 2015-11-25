@@ -14,54 +14,35 @@ using namespace std;
 //create a vector of the state variables
 //feeding in the number of DOFs, the vector of doubles that will go to controller, the reference frame information, and the time.
 //returning a vector of doubles, where the 0 value is time, the 1 value is the timestep, and then the values alternate between position and velocity for the DOFs. The final value is the Kinetic Energy
-vector<double> createstatevector(int lincount, int rotcount, craft ref, double time, double timestep){
-    
-    vector<double> statevec;
-    double KE = 0;
-    
-    
-    statevec.push_back(time);
-    statevec.push_back(timestep);
-    
-    for(int i=0;i<lincount;i++){
-        double s = ref.frame.at(i).s;
-        double v = ref.frame.at(i).sdot;
-        KE = KE + 0.5*ref.mass*v*v;
-        statevec.push_back(s);
-        statevec.push_back(v);
-    }
-    
-    for(int i=0;i<rotcount;i++){
-        double theta = ref.orientation.at(i).q;
-        double omega = ref.orientation.at(i).qdot;
-        statevec.push_back(theta);
-        statevec.push_back(omega);
-        KE = KE + 0.5*ref.inertia*omega*omega;
-    }
-    
-    statevec.push_back(KE);
-    return statevec;
-}
+//vector<double> createstatevector(int lincount, int rotcount, craft ref, double time, double timestep){
+//    
+//    vector<double> statevec;
+//    double KE = 0;
+//    
+//    
+//    statevec.push_back(time);
+//    statevec.push_back(timestep);
+//    
+//    for(int i=0;i<lincount;i++){
+//        double s = ref.frame.at(i).s;
+//        double v = ref.frame.at(i).sdot;
+//        KE = KE + 0.5*ref.mass*v*v;
+//        statevec.push_back(s);
+//        statevec.push_back(v);
+//    }
+//    
+//    for(int i=0;i<rotcount;i++){
+//        double theta = ref.orientation.at(i).q;
+//        double omega = ref.orientation.at(i).qdot;
+//        statevec.push_back(theta);
+//        statevec.push_back(omega);
+//        KE = KE + 0.5*ref.inertia*omega*omega;
+//    }
+//    
+//    statevec.push_back(KE);
+//    return statevec;
+//}
 
-
-//print header for keeping track of positions
-void printheader(){
-    cout << "Time \t TStep \t\t X-Pos \t X-Velocity \t Z-Pos \t Z-Velocity \t Pitch \t Omega \t Kinetic Energy" << endl;
-}
-
-//print values for each round
-//state is the vector of state variables
-//count is the number of DOFs
-//file is the output file to be read by MatLab
-void printround(vector<double> s, ofstream & file){
-    for(int i=0;i<s.size();i++){
-        cout << s.at(i) << "\t\t\t";
-        file << s.at(i) << "\t\t\t";
-    }
-    cout<<endl;
-    file<<endl;
-    
-}
 
 // Input Aerodynamic Coefficients from .txt file
 
