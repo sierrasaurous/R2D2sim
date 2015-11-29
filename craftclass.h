@@ -82,6 +82,8 @@ void craft::initialize(int dl, int dr){
         KEinitial = KEinitial + 0.5*inertia*pow(rot.qdot,2);
         orientation.push_back(rot);
     }
+    
+    frame.at(0).sdot = frame.at(0).sdot*-1;
 }
 
 class State{
