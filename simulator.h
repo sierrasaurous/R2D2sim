@@ -23,7 +23,7 @@ public:
     int linear, rotational, numalf;
     double t, anglechange, fitness;
     double const tstep = 0.1;
-    double const tmax = 60;
+    double const tmax = 1000;
     double const rhoair = 1.2;
     
     vector<State> stateholder;
@@ -105,7 +105,7 @@ void Simulator::initialize_sim(){
 
 void Simulator::run_sim(){
     
-    while(t<tmax && lander.frame.at(1).s > lander.frame.at(1).target){
+    while(t<tmax){// && lander.frame.at(1).s >= lander.frame.at(1).target){
         controls = controller(currentstate);
         forces = forcecalc(controls, lander, rhoair, aero);
         anglechange = anglechange + dynamicscalc(lander, forces, tstep, linear, rotational);

@@ -51,184 +51,215 @@ vector<int> checkquadrant(craft land){
     }
     quadrants.push_back(direction);
     
-    // check quadrant for aircraft body
+    // check quadrant for aircraft body orientation
     
     phi = reset_angle(land.orientation.at(0).q);
     double pi = 4*atan(1);
     
-    if(0<=phi && phi<=(pi/2)){
-        direction = 2;
-    }else if((pi/2)<phi&& phi <=pi){
+    if(0>=phi && phi<=(pi/2)){
         direction = 1;
+    }else if((pi/2)<phi&& phi <=pi){
+        direction = 2;
     }else if(phi<0 && phi>=(-pi/2)){
-        direction = 3;
-    }else if((-pi/2)>phi&& phi>=(-pi)){
         direction = 4;
+    }else if((-pi/2)>phi&& phi>=(-pi)){
+        direction = 3;
     }else{
-        cout << "\n ERROR, HOMIE \n";
+        cout << "\n ERROR\n";
     }
     quadrants.push_back(direction);
     
     return quadrants;
 }
 
-// determine how we are making vectors components
-// 0 value is angle of attack
-// 1,2 are multipliers for lift in nx and nz, respectively
-// 3,4 are multipliers for drag in nx and nz
-// 5,6 are multipliers for thrust in nx and nz
+// calculate coefficients for force directions
 vector<double> coeffcalc(vector<int> directions, double q, double t){
-    double aoa;
+    double aoa;     //determine angle of attack
     double pi = 4*atan(1);
-    double lxm, lzm, dxm, dzm, txm, tzm;
+    double lxm, lzm, dxm, dzm, txm, tzm;    //lift in X, lift in Z, drag in X, drag in Z, thrust in X, thrust in Z
     vector<double> coefficients;
     
+    
+    //determine what direction the aircraft nose is facing, and what direction the velocity is.
+    //use directions to find coefficients
     if(directions.at(0)==1){
         if(directions.at(1)==1){
-            aoa = pi-q-t;
-            txm = cos(pi-q);
-            tzm = sin(pi-q);
+            //-------Case 1----------
+            aoa = q-t;
+            txm = cos(q);
+            tzm = sin(q);
             lxm = -sin(t);
             lzm = cos(t);
             dxm = -cos(t);
             dzm = -sin(t);
+            cout << "Case 1" << endl;
         }else if(directions.at(1)==2){
-            aoa = pi-q-t;
-            txm = -cos(q);
+            //-------Case 2----------
+            aoa = q-t;
+            txm = cos(q);
             tzm = sin(q);
-            lxm = sin(t);
-            lzm = -cos(t);
+            lxm = -sin(t);
+            lzm = cos(t);
             dxm = -cos(t);
             dzm = -sin(t);
+            cout << "Case 2" << endl;
         }else if(directions.at(1)==3){
+            //-------Case 3----------
             aoa = pi/2;
-            txm = -cos(q);
-            tzm = -sin(q);
+            txm = cos(q);
+            tzm = sin(q);
             lxm = 0;
             lzm = 0;
             dxm = 0;
             dzm = 0;
+            cout << "Case 3" << endl;
         }else if(directions.at(1)==4){
-            aoa = -(pi-q+t);
-            txm = cos(pi-q);
-            tzm = -sin(pi-q);
-            lxm = -sin(t);
+            //-------Case 4----------
+            aoa = q-t;
+            txm = cos(q);
+            tzm = sin(q);
+            lxm = sin(t);
             lzm = cos(t);
             dxm = -cos(t);
             dzm = -sin(t);
+            cout << "Case 4" << endl;
         }else{
-            cout << "\n ERROR, HOMIE \n";
+            cout << "\n ERROR\n";
         }
     }else if(directions.at(0)==2){
         if(directions.at(1)==1){
-            aoa = q-t;
-            txm = cos(pi-q);
-            tzm = sin(pi-q);
-            lxm = -cos(t);
-            lzm = -sin(t);
-            dxm = cos(t);
-            dzm = -sin(t);
-        }else if(directions.at(1)==2){
-            aoa = q-t;
-            txm = -cos(q);
+            //-------Case 5----------
+            aoa = pi-q-t;
+            txm = cos(q);
             tzm = sin(q);
-            lxm = cos(t);
-            lzm = sin(t);
+            lxm = sin(t);
+            lzm = cos(t);
             dxm = cos(t);
             dzm = -sin(t);
+            cout << "Case 5" << endl;
+        }else if(directions.at(1)==2){
+            //-------Case 6----------
+            aoa = pi-q-t;
+            txm = cos(q);
+            tzm = sin(q);
+            lxm = sin(t);
+            lzm = cos(t);
+            dxm = cos(t);
+            dzm = -sin(t);
+            cout << "Case 6" << endl;
         }else if(directions.at(1)==3){
-            aoa = -(q+t);
-            txm = -cos(q);
-            tzm = -sin(q);
-            lxm = -cos(t);
-            lzm = sin(t);
+            //-------Case 7----------
+            aoa = q+t+pi;
+            txm = cos(q);
+            tzm = sin(q);
+            lxm = -sin(t);
+            lzm = cos(t);
             dxm = cos(t);
             dzm = -sin(t);
+            cout << "Case 7" << endl;
         }else if(directions.at(1)==4){
+            //-------Case 8----------
             aoa = pi/2;
-            txm = cos(pi-q);
-            tzm = -sin(pi-q);
+            txm = cos(q);
+            tzm = sin(q);
             lxm = 0;
             lzm = 0;
             dxm = 0;
             dzm = 0;
+            cout << "Case 8" << endl;
         }else{
-            cout << "\n ERROR, HOMIE \n";
+            cout << "\n ERROR\n";
         }
     }else if(directions.at(0)==3){
         if(directions.at(1)==1){
+            //-------Case 9----------
             aoa = pi/2;
-            txm = cos(pi-q);
-            tzm = sin(pi-q);
+            txm = cos(q);
+            tzm = sin(q);
             lxm = 0;
             lzm = 0;
             dxm = 0;
             dzm = 0;
+            cout << "Case 9" << endl;
         }else if(directions.at(1)==2){
-            aoa = q+t;
-            txm = -cos(q);
+            //-------Case 10----------
+            aoa = pi-q+t;
+            txm = cos(q);
             tzm = sin(q);
             lxm = -sin(t);
             lzm = cos(t);
             dxm = cos(t);
             dzm = sin(t);
+            cout << "Case 10" << endl;
         }else if(directions.at(1)==3){
-            aoa = t-q;
+            //-------Case 11----------
+            aoa = pi+q-t;
             txm = cos(q);
-            tzm = -sin(q);
-            lxm = -sin(t);
+            tzm = sin(q);
+            lxm = sin(t);
             lzm = cos(t);
             dxm = cos(t);
             dzm = sin(t);
+            cout << "Case 11" << endl;
         }else if(directions.at(1)==4){
-            aoa = t-q;
-            txm = cos(pi-q);
-            tzm = -sin(pi-q);
+            //-------Case 12----------
+            aoa = pi+q-t;
+            txm = cos(q);
+            tzm = sin(q);
             lxm = sin(t);
-            lzm = -cos(t);
+            lzm = cos(t);
             dxm = cos(t);
             dzm = sin(t);
+            cout << "Case 12" << endl;
         }else{
-            cout << "\n ERROR, HOMIE \n";
+            cout << "\n ERROR \n";
         }
     }else if(directions.at(0)==4){
         if(directions.at(1)==1){
-            aoa = pi-q+t;
-            txm = cos(pi-q);
-            tzm = sin(pi-q);
+            //-------Case 13----------
+            aoa = q+t;
+            txm = cos(q);
+            tzm = sin(q);
             lxm = sin(t);
             lzm = cos(t);
             dxm = -cos(t);
             dzm = sin(t);
+            cout << "Case 13" << endl;
         }else if(directions.at(1)==2){
+            //-------Case 14----------
             aoa = pi/2;
-            txm = -cos(q);
+            txm = cos(q);
             tzm = sin(q);
             lxm = 0;
             lzm = 0;
             dxm = 0;
             dzm = 0;
+            cout << "Case 14" << endl;
         }else if(directions.at(1)==3){
-            aoa = pi-q-t;
-            txm = -cos(q);
-            tzm = -sin(q);
+            //-------Case 15----------
+            aoa = q+t;
+            txm = cos(q);
+            tzm = sin(q);
             lxm = sin(t);
             lzm = cos(t);
             dxm = -cos(t);
             dzm = sin(t);
+            cout << "Case 15" << endl;
         }else if(directions.at(1)==4){
-            aoa = pi-q-t;
-            txm = cos(pi-q);
-            tzm = -sin(pi-q);
-            lxm = sin(t);
+            //-------Case 16----------
+            aoa = q+t;
+            txm = cos(q);
+            tzm = sin(q);
+            lxm = -sin(t);
             lzm = cos(t);
             dxm = -cos(t);
             dzm = sin(t);
+            cout << "Case 16" << endl;
         }else{
-            cout << "\n ERROR, HOMIE \n";
+            cout << "\n ERROR\n";
         }
     }else{
-        cout << "\n ERROR, HOMIE \n";
+        cout << "\n ERROR\n";
     }
     
     // pushback values into a vector

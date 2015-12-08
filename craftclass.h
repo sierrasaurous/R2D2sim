@@ -26,8 +26,10 @@ public:
 
 //declare initializations of degree of freedom parameters
 void linDOF::initialize(){
-    s = rand()%100;
-    sdot = rand()%5;
+    //s = rand()%100;
+    //sdot = rand()%5;
+    s = 0;
+    sdot = 0;
     sdotdot = 0;
     target = 0;
     
@@ -44,7 +46,9 @@ public:
 
 
 void rotDOF::initialize(){
-    q = (rand()%60)*4*atan(1)/180; //Initializing orientation between 0 and 60 degrees
+    //q = (rand()%60)*4*atan(1)/180; //Initializing orientation between 0 and 60 degrees
+    q = 0;
+    //q = 0.0001;
     qdot = 0;
     qdotdot = 0; //Initializing angular velocity and acceleration to 0 for simplicity.
     target = 0;
@@ -65,7 +69,7 @@ public:
 //declare initializations of craft parameters, including DOFs
 void craft::initialize(int dl, int dr){
     mass = 20;
-    inertia = 20;
+    inertia = 200;
     KEinitial = 0;
     sref = 0.02; // wing considered roughly rectangular with 20 cm chord length, 1 m span
     
@@ -82,8 +86,10 @@ void craft::initialize(int dl, int dr){
         KEinitial = KEinitial + 0.5*inertia*pow(rot.qdot,2);
         orientation.push_back(rot);
     }
+    frame.at(0).s = 0;
+    //frame.at(0).sdot = -10;
     
-    frame.at(0).sdot = frame.at(0).sdot*-1;
+    //frame.at(0).sdot = frame.at(0).sdot*-1;
 }
 
 class State{
@@ -123,8 +129,8 @@ void State::printheader(){
 //file is the output file to be read by MatLab
 void State::printround(ofstream & file){
     
-    cout << time << "\t\t\t" << timestep << "\t\t\t" << xpos << "\t\t\t" << xvel << "\t\t\t" << zpos << "\t\t\t";
-    cout << zvel << "\t\t\t" << phi << "\t\t\t" << phivel << "\t\t\t" << KEx << "\t\t\t" << KEz << "\t\t\t" << KEp << endl;
+    //cout << time << "\t\t\t" << timestep << "\t\t\t" << xpos << "\t\t\t" << xvel << "\t\t\t" << zpos << "\t\t\t";
+    //cout << zvel<< endl; //<< "\t\t\t" << phi << "\t\t\t" << phivel << "\t\t\t" << KEx << "\t\t\t" << KEz << "\t\t\t" << KEp << endl;
     file << time << "\t\t\t" << timestep << "\t\t\t" << xpos << "\t\t\t" << xvel << "\t\t\t" << zpos << "\t\t\t";
     file << zvel << "\t\t\t" << phi << "\t\t\t" << phivel << "\t\t\t" << KEx << "\t\t\t" << KEz << "\t\t\t" << KEp << endl;
     

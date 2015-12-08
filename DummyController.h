@@ -19,16 +19,40 @@ vector <double> controller(State state){
     double forcez;
     double torque;
     double angle;
-    
-//    forcex = -2*(state.at(2)+state.at(3)*10);
-//    forcez = -2*(state.at(4)+state.at(5)*10);
+    double linforce;
+    double theta, alpha;
     
     forcex = 0.5;
     forcez = 0.5;
     angle = atan(abs(forcez/forcex));
-    torque = (state.phi-angle)/state.timestep;
+    torque = 0;
     
-    double linforce = sqrt(pow(forcex,2)+pow(forcez,2));
+    double velocity = sqrt(pow(state.xvel,2)+pow(state.zvel,2));
+    theta = acos(state.xvel/(velocity+1));
+    alpha = state.phi-theta;
+    
+//    if(alpha <0){
+//        torque = .1;
+//    }else if(alpha >= 0 && alpha <= 0.1*atan(1)){
+//        torque = 0.05;
+//    }else{
+//        torque = -0.05;
+//    }
+    
+    //double linforce = sqrt(pow(forcex,2)+pow(forcez,2));
+    
+    linforce = 0;
+    
+    if(state.time<2){
+        linforce = 0;
+    }else if(state.time>=2 && state.time<60){
+        linforce = 120;
+    }else if(state.time>=80){
+        if(state.zvel<=-0.5){
+            linforce = 20.85;
+        }
+    }
+    
     
     controls.push_back(linforce);
     controls.push_back(torque);
